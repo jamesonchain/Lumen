@@ -1,0 +1,58 @@
+"use client";
+
+import dynamic from "next/dynamic";
+import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Lenis from "lenis";
+import { PRESETS } from "@/lib/scene";
+
+const WorldCanvas = dynamic(() => import("@/components/WorldCanvas"), { ssr: false });
+
+const gsapEase = "power4.out";
+gsap.registerPlugin(ScrollTrigger);
+const jsonLines = ["{", '  "audience": "Gen Z gamers",', '  "mood": "electric, lucid",', '  "shader": { "speed": 1.35 },', '  "scenes": [ ... ],', '  "soundscape": "Dorian / 128 bpm"', "}"];
+
+function Mono({ children, className = "" }: { children: React.ReactNode; className?: string }) { return <span className={`mono ${className}`}>{children}</span>; }
+
+function Preloader({ done, onDone }: { done: boolean; onDone: () => void }) {
+  const [count, setCount] = useState(0);
+  useEffect(() => { const start = performance.now(); const tick = (now: number) => { const next = Math.min(100, Math.round(((now - start) / 2500) * 100)); setCount(next); if (next < 100) requestAnimationFrame(tick); else window.setTimeout(onDone, 200); }; requestAnimationFrame(tick); }, [onDone]);
+  if (done) return null;
+  return <motion.div className="preloader" initial={{ opacity: 1 }} animate={{ opacity: 1 }}><div className="preloader-word">lumen<span>©</span></div><div className="preloader-count">{String(count).padStart(3, "0")}</div><Mono className="preloader-label">adaptive experience engine / initializing</Mono><div className="preloader-line"><i style={{ width: `${count}%` }} /></div></motion.div>;
+}
+
+function Cursor() {
+  const ref = useRef<HTMLDivElement>(null); const label = useRef<HTMLSpanElement>(null);
+  useEffect(() => { const move = (event: MouseEvent) => { if (ref.current) { ref.current.style.transform = `translate3d(${event.clientX}px,${event.clientY}px,0)`; } }; const over = (event: MouseEvent) => { const interactive = (event.target as HTMLElement).closest("button,a,input"); ref.current?.classList.toggle("cursor-big", Boolean(interactive)); label.current!.textContent = (event.target as HTMLElement).closest(".seam-control") ? "DRAG" : ""; }; window.addEventListener("mousemove", move); document.addEventListener("mouseover", over); return () => { window.removeEventListener("mousemove", move); document.removeEventListener("mouseover", over); }; }, []);
+  return <div ref={ref} className="cursor"><span ref={label} /></div>;
+}
+
+function SectionLabel({ number, children }: { number: string; children: React.ReactNode }) { return <div className="section-label"><Mono>{number}</Mono><span>{children}</span></div>; }
+
+export default function Home() {
+  const [ready, setReady] = useState(false); const [brief, setBrief] = useState({ brandName: "Lumen", product: "a culture intelligence platform", tone: "Quietly radical", goal: "Make the next move with clarity" }); const [audience, setAudience] = useState(0); const [divider, setDivider] = useState(50); const [generating, setGenerating] = useState(false); const [generated, setGenerated] = useState(false); const [metricsOpen, setMetricsOpen] = useState(false); const heroRef = useRef<HTMLElement>(null);
+  useEffect(() => { const lenis = new Lenis({ duration: 1.15, smoothWheel: true }); let frame = 0; const raf = (time: number) => { lenis.raf(time); frame = requestAnimationFrame(raf); }; frame = requestAnimationFrame(raf); const sections = gsap.utils.toArray<HTMLElement>(".reveal-section"); sections.forEach((section) => gsap.fromTo(section.children, { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 1.1, ease: gsapEase, stagger: 0.08, scrollTrigger: { trigger: section, start: "top 75%" } })); return () => { cancelAnimationFrame(frame); lenis.destroy(); }; }, []);
+  const generate = async () => { setGenerating(true); const res = await fetch("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...brief, audiences: PRESETS.map((preset) => preset.audience) }) }); const data = await res.json(); setGenerated(Boolean(data.scenes)); setGenerating(false); document.querySelector("#live-split")?.scrollIntoView({ behavior: "smooth" }); };
+  const current = PRESETS[audience];
+  return <>
+    <Preloader done={ready} onDone={() => setReady(true)} />
+    <Cursor />
+    <main className="lumen-app" ref={heroRef}>
+      <header className="site-header"><a className="wordmark" href="#top">lumen<span>©</span></a><div className="header-center"><Mono>LUMEN / ADAPTIVE EXPERIENCE ENGINE</Mono></div><div className="header-right"><Mono className="clock">{new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Mono><Mono className="amd-pill"><i /> POWERED BY AMD ROCM</Mono></div></header>
+      <section id="top" className="hero"><WorldCanvas divider={divider} activePalette={current.palette} /><div className="hero-vignette" /><div className="hero-copy"><motion.p initial={{ opacity: 0, y: 20 }} animate={ready ? { opacity: 1, y: 0 } : {}} transition={{ delay: .3, duration: 1, ease: "easeOut" }}><Mono className="eyebrow">A BRAND IS NEVER JUST ONE THING</Mono></motion.p><h1><span>One brand<span className="dot">.</span></span><span>Every world<span className="dot">.</span></span></h1><motion.div className="hero-foot" initial={{ opacity: 0 }} animate={ready ? { opacity: 1 } : {}} transition={{ delay: 1.2 }}><p>One brief, re-authored for the people who matter most.</p><a href="#studio" className="arrow-link">Compose yours <span>↘</span></a></motion.div></div><div className="hero-corner hero-corner-left"><Mono>01 / 06</Mono><span className="corner-rule" /></div><div className="hero-corner hero-corner-right"><Mono>MOVE TO EXPLORE</Mono><span className="scroll-line" /></div><div className="seam-control" style={{ left: `${divider}%` }}><span className="seam-handle">↔</span></div></section>
+
+      <section id="studio" className="section think reveal-section"><SectionLabel number="02">Watch it think</SectionLabel><div className="think-grid"><div><h2>From a few words<br /><em>to a world.</em></h2><p className="section-intro">Lumen reads the intent behind your brief, then builds an entire visual language around the people you want to move.</p><div className="brief-fields">{Object.entries(brief).map(([key, value]) => <label key={key}><Mono>{key}</Mono><input value={value} onChange={(event) => setBrief({ ...brief, [key]: event.target.value })} /></label>)}</div><button className="text-button" onClick={generate}>{generating ? "Building the signal…" : generated ? "Worlds generated ↗" : "Start with a brief ↗"} <span>↗</span></button></div><div className="think-stage"><div className="token-field">{Array.from({ length: 44 }).map((_, i) => <i key={i} style={{ "--i": i } as React.CSSProperties} />)}</div><div className="json-panel">{jsonLines.map((line, i) => <motion.div key={line} initial={{ opacity: 0, x: 10 }} whileInView={{ opacity: 1, x: 0 }} transition={{ delay: i * .12 }}><b>{String(i + 1).padStart(2, "0")}</b><span>{line}</span></motion.div>)}</div><Mono className="stage-caption">SCENE SCRIPT / STREAMING</Mono></div></div></section>
+
+      <section id="live-split" className="section split-section reveal-section"><SectionLabel number="03">Live split demo</SectionLabel><div className="split-heading"><h2>Same signal.<br /><em>Different gravity.</em></h2><div className="split-tabs">{PRESETS.map((preset, i) => <button key={preset.audience} onClick={() => setAudience(i)} className={audience === i ? "active" : ""}>0{i + 1} / {i === 0 ? "PLAY" : "LEAD"}</button>)}</div></div><div className="audience-stage" style={{ "--split": `${divider}%`, "--one": current.palette[1], "--two": current.palette[2] } as React.CSSProperties}><div className="world-card world-left"><Mono>01 / {PRESETS[0].audience}</Mono><strong>THE FUTURE<br />HAS A PULSE<span>.</span></strong><div className="swatches">{PRESETS[0].palette.slice(1).map((color) => <i key={color} style={{ background: color }} />)}</div></div><div className="world-card world-right"><Mono>02 / {PRESETS[1].audience}</Mono><strong>CLARITY<br />COMPOUNDS<span>.</span></strong><div className="swatches">{PRESETS[1].palette.slice(1).map((color) => <i key={color} style={{ background: color }} />)}</div></div><div className="split-line" style={{ left: `${divider}%` }}><span>DRAG</span></div><input aria-label="Compare audience worlds" className="split-range" type="range" min="20" max="80" value={divider} onChange={(event) => setDivider(Number(event.target.value))} /></div><div className="spec-row"><div><Mono>DISPLAY / {current.fontPairing.display}</Mono><div className="display-spec">Aa</div></div><div><Mono>BODY / {current.fontPairing.body}</Mono><p>Sharp intent<br />with a human pulse.</p></div><div><Mono>MOOD / {current.mood}</Mono><p>noise scale {current.shader.noiseScale}<br />speed {current.shader.speed}</p></div></div></section>
+
+      <section className="section metrics-section reveal-section"><SectionLabel number="04">AMD mission control</SectionLabel><div className="metrics-top"><h2>Built on<br /><em>open silicon.</em></h2><div className="gpu-badge"><span className="gpu-icon">◈</span><div><Mono>ACCELERATED BY</Mono><strong>AMD MI300X</strong></div><i /></div></div><div className="metrics-grid"><div className="metric"><Mono>TOKENS / SECOND</Mono><strong>84<span>+</span></strong><div className="sparkline"><i /><i /><i /><i /><i /><i /><i /><i /><i /></div></div><div className="metric"><Mono>LATENCY / MS</Mono><strong>642</strong><p>response to first frame</p></div><div className="metric"><Mono>COST / EXPERIENCE</Mono><strong>$0<span>.48</span></strong><p>from brief to reality</p></div></div><button className="metrics-toggle" onClick={() => setMetricsOpen(!metricsOpen)}>{metricsOpen ? "Close telemetry" : "Open telemetry"} <span>↗</span></button>{metricsOpen && <div className="telemetry"><Mono>LIVE / AMD_API / MOCK FALLBACK READY</Mono><span>GPU UTILIZATION 78%</span><span>QUALITY SCORE 96 / 100</span></div>}</section>
+
+      <section className="section business reveal-section"><SectionLabel number="05">The business case</SectionLabel><div className="business-head"><h2>Make the page<br /><em>the pitch.</em></h2><p>Every audience deserves a world that speaks in its own frequency.</p></div><div className="business-track"><div className="business-card featured"><Mono>LUMEN / PER EXPERIENCE</Mono><strong>$480</strong><span>Two audience worlds / one afternoon</span></div><div className="business-card"><Mono>MANUAL AGENCY / AVG</Mono><strong>$18,000</strong><span className="strike">Four to six weeks / one direction</span></div><div className="business-card dark-card"><Mono>THE MULTIPLIER</Mono><strong>37.5<span>x</span></strong><span>more point of view per dollar</span></div></div></section>
+
+      <section className="final-cta reveal-section"><WorldCanvas divider={divider} activePalette={current.palette} compact /><Mono>06 / MAKE YOUR MOVE</Mono><h2>Enter the<br /><em>studio.</em></h2><button className="giant-button" onClick={() => document.querySelector("#studio")?.scrollIntoView({ behavior: "smooth" })}>Enter the studio <span>↗</span></button></section>
+      <footer className="footer"><a className="wordmark giant-wordmark" href="#top">lumen<span>©</span></a><div><Mono>AMD DEVELOPER HACKATHON ACT III / TRACK 04</Mono><p>Create a new kind of experience.</p></div><Mono>© 2026 / Lagos, NG</Mono></footer>
+    </main>
+  </>;
+}
