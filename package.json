@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "benchmark": "node scripts/benchmark.mjs",
+    "warm": "node scripts/warm.mjs"
   },
   "dependencies": {
     "@react-three/drei": "latest",

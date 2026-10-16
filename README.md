@@ -10,7 +10,9 @@ cp .env.example .env.local
 npm run dev
 ```
 
-If `AMD_API_KEY` is empty, Lumen automatically runs in mock mode with two ready-to-run presets: Gen Z gamers and 55 year old CFOs. With the AMD variables present, `/api/generate` calls `{AMD_BASE_URL}/chat/completions` from the server only. It confirms `/models` at startup, runs both audience generations in parallel, honors `Retry-After` on 429s, switches to `AMD_FALLBACK_MODEL` on 502/503, retries invalid JSON once with a stricter system prompt, validates/repairs the scene script with Zod, and falls back safely if needed. Results are cached in server memory and browser local storage for instant repeat demos.
+If `AMD_API_KEY` is empty, Lumen automatically runs in mock mode with two ready-to-run presets: Gen Z gamers and 55 year old CFOs. With the AMD variables present, `/api/generate` calls `{AMD_BASE_URL}/chat/completions` from the server only. It confirms `/models` at startup, runs both compact audience generations in parallel, streams SSE tokens, honors `Retry-After` on 429s, switches to `AMD_FALLBACK_MODEL` on 502/503, retries invalid JSON once with a stricter system prompt, validates with Zod, and falls back safely if needed. The compact response is expanded into the full five-scene client object. Results are cached in server memory and browser local storage for instant repeat demos.
+
+For a fast demo loop, run `npm run benchmark` once to compare the four supported models and print the fastest valid recommendation. With the dev server running, `npm run warm` generates both preset audiences live and writes `public/lumen-warm.json`; the preset brief then replays instantly with the label “Generated live on AMD, replayed from cache”. Custom briefs always call AMD live.
 
 ## Environment
 
@@ -23,7 +25,7 @@ If `AMD_API_KEY` is empty, Lumen automatically runs in mock mode with two ready-
 
 ## Architecture
 
-`App Router page` → `Studio brief state` → `POST /api/generate` → server-side model availability check → two parallel limited completions → Zod repair/validation → metrics aggregation → split reveal renderer. The fallback path is `PRESETS` and is intentionally first-class, so the demo works without credentials. The browser owns interaction state, local-storage caching, and motion; the route owns provider secrets, retries, model selection, validation, and metrics.
+`App Router page` → `Studio brief state` → `POST /api/generate` → `/models` check → parallel compact SSE completions → incremental palette/mood events → Zod validation and client-side expansion → metrics aggregation → split reveal renderer. The fallback path is `PRESETS` and is intentionally first-class, so the demo works without credentials. The browser owns interaction state, local-storage/warm replay, and motion; the route owns provider secrets, retries, model selection, validation, streaming, and metrics.
 
 ## 90-second demo script
 

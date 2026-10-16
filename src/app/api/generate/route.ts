@@ -1,83 +1,55 @@
 import { createHash } from "node:crypto";
-import { NextResponse } from "next/server";
-import { PRESETS, SceneSchema, type SceneScript } from "@/lib/scene";
+import { PRESETS, CompactSceneSchema, type CompactScene } from "@/lib/scene";
 
-type Usage = { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number; cost?: number; total_cost?: number; cost_usd?: number };
-type ModelResponse = { choices?: Array<{ message?: { content?: string } }>; usage?: Usage; model?: string };
-type AudienceResult = { scene: SceneScript; raw: string; model: string; latencyMs: number; completionTokens: number; tokensPerSecond: number; costUsd: number; live: boolean; notice?: string };
-
-const memoryCache = new Map<string, AudienceResult>();
+type Usage = { completion_tokens?: number; cost?: number; total_cost?: number; cost_usd?: number };
+type CompactResult = { compact: CompactScene; raw: string; model: string; latencyMs: number; completionTokens: number; tokensPerSecond: number; costUsd: number; live: boolean; notice?: string };
+type Emit = (event: Record<string, unknown>) => void;
+const memoryCache = new Map<string, CompactResult>();
 const fallbackModel = () => process.env.AMD_FALLBACK_MODEL || "DeepSeek-V4.1-Flash";
 const mainModel = () => process.env.AMD_MODEL || "DeepSeek-V4-Flash";
 let modelCheck: Promise<Set<string> | null> | null = null;
+const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex").slice(0, 24);
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const retryAfterMs = (response: Response) => { const seconds = Number(response.headers.get("retry-after")); return Number.isFinite(seconds) ? Math.min(seconds * 1000, 15000) : 0; };
+const numeric = (value: unknown, fallback: number) => typeof value === "number" && Number.isFinite(value) ? value : fallback;
+const presetFor = (audience: string, index: number) => PRESETS.find((preset) => preset.audience.toLowerCase() === audience.toLowerCase()) || PRESETS[index % PRESETS.length];
+const envPresence = () => ({ AMD_BASE_URL: Boolean(process.env.AMD_BASE_URL), AMD_API_KEY: Boolean(process.env.AMD_API_KEY), AMD_MODEL: Boolean(process.env.AMD_MODEL), AMD_FALLBACK_MODEL: Boolean(process.env.AMD_FALLBACK_MODEL) });
 
-function hash(value: unknown) { return createHash("sha256").update(JSON.stringify(value)).digest("hex").slice(0, 24); }
-function sleep(ms: number) { return new Promise((resolve) => setTimeout(resolve, ms)); }
-function retryAfterMs(response: Response) { const header = response.headers.get("retry-after"); const seconds = header ? Number(header) : NaN; return Number.isFinite(seconds) ? Math.min(seconds * 1000, 15000) : 0; }
-function presetFor(audience: string, index: number) { return PRESETS.find((preset) => preset.audience.toLowerCase() === audience.toLowerCase()) || PRESETS[index % PRESETS.length]; }
-function numeric(value: unknown, fallback: number) { return typeof value === "number" && Number.isFinite(value) ? value : fallback; }
-function envPresence() { return { AMD_BASE_URL: Boolean(process.env.AMD_BASE_URL), AMD_API_KEY: Boolean(process.env.AMD_API_KEY), AMD_MODEL: Boolean(process.env.AMD_MODEL), AMD_FALLBACK_MODEL: Boolean(process.env.AMD_FALLBACK_MODEL) }; }
-function repairScene(candidate: unknown, fallback: SceneScript, audience: string, brief: Record<string, unknown>): SceneScript {
-  const input = candidate && typeof candidate === "object" ? candidate as Partial<SceneScript> : {};
-  const scenes = Array.isArray(input.scenes) ? input.scenes : [];
-  const mergedScenes = Array.from({ length: 5 }, (_, index) => ({ ...fallback.scenes[index], ...(scenes[index] && typeof scenes[index] === "object" ? scenes[index] : {}) }));
-  const palette = Array.isArray(input.palette) ? input.palette.filter((color): color is string => typeof color === "string").slice(0, 5) : [];
-  const merged = {
-    ...fallback,
-    ...input,
-    audience,
-    brandName: typeof input.brandName === "string" ? input.brandName : String(brief.brandName || fallback.brandName),
-    product: typeof input.product === "string" ? input.product : String(brief.product || fallback.product),
-    palette: [...palette, ...fallback.palette].slice(0, 5),
-    fontPairing: { ...fallback.fontPairing, ...(input.fontPairing || {}) },
-    shader: { ...fallback.shader, ...(input.shader || {}) },
-    soundscape: { ...fallback.soundscape, ...(input.soundscape || {}) },
-    scenes: mergedScenes,
-    qualityScore: numeric(input.qualityScore, fallback.qualityScore),
-  };
-  return SceneSchema.parse(merged);
-}
+function sse(event: Record<string, unknown>) { return `data: ${JSON.stringify(event)}\n\n`; }
+function partialJson(text: string) { const result: Record<string, unknown> = {}; const palette = text.match(/"p"\s*:\s*\[((?:\s*"#[0-9a-fA-F]{3,8}"\s*,?){1,5})/); if (palette) result.palette = [...palette[1].matchAll(/"(#[0-9a-fA-F]{3,8})"/g)].map((match) => match[1]); const mood = text.match(/"m"\s*:\s*"([^"]*)/); if (mood) result.mood = mood[1]; return Object.keys(result).length ? result : null; }
 
 async function availableModels(baseUrl: string, apiKey: string) {
-  if (!modelCheck) modelCheck = fetch(`${baseUrl.replace(/\/$/, "")}/models`, { headers: { Authorization: `Bearer ${apiKey}` }, cache: "no-store" }).then(async (response) => { const body = await response.text(); if (!response.ok) { console.error("[Lumen AMD] GET /models failed", { status: response.status, body: body.slice(0, 500) }); return null; } try { const data = JSON.parse(body) as { data?: Array<{ id?: string }> }; const ids = new Set((data.data || []).map((model) => model.id).filter((id): id is string => Boolean(id))); console.info("[Lumen AMD] models checked", { count: ids.size, mainAvailable: ids.has(mainModel()), fallbackAvailable: ids.has(fallbackModel()) }); return ids; } catch (error) { console.error("[Lumen AMD] GET /models returned invalid JSON", { error: error instanceof Error ? error.message : "unknown" }); return null; } }).catch((error) => { console.error("[Lumen AMD] GET /models request failed", { error: error instanceof Error ? error.message : "unknown" }); return null; });
+  if (!modelCheck) modelCheck = fetch(`${baseUrl}/models`, { headers: { Authorization: `Bearer ${apiKey}` }, cache: "no-store" }).then(async (response) => { const body = await response.text(); if (!response.ok) { console.error("[Lumen AMD] /models failed", { status: response.status, body: body.slice(0, 500) }); return null; } try { const ids = new Set(((JSON.parse(body) as { data?: Array<{ id?: string }> }).data || []).map((item) => item.id).filter((id): id is string => Boolean(id))); console.info("[Lumen AMD] models", { count: ids.size, main: ids.has(mainModel()), fallback: ids.has(fallbackModel()) }); return ids; } catch { console.error("[Lumen AMD] /models invalid JSON"); return null; } }).catch((error) => { console.error("[Lumen AMD] /models request failed", { reason: error instanceof Error ? error.message : "unknown" }); return null; });
   return modelCheck;
 }
 
-async function fetchCompletion(baseUrl: string, apiKey: string, model: string, system: string, user: string): Promise<{ response: ModelResponse; latencyMs: number }> {
-  let lastError: Error | undefined;
+const SYSTEM = "You are Lumen, a cinematic brand director. Return compact JSON only. Keys are a brand b, product r, audience a, palette p with exactly 5 hex colors, mood m with 3 words, font f as {d:display,b:body}, shader h as {n:noiseScale,s:speed,d:distortion,c:colorMix}, scenes x with exactly 4 items {h:headline max 7 words,t:subtext max 14 words,v:motion}, sound q as {t:tempo,s:scale}, and call to action c. Motion v must be orbit, glitch, bloom, magnetic, measured, parallax, focus, reveal. Scale q.s must be Dorian, Phrygian, Lydian, Aeolian, or Mixolydian. No markdown.";
+const STRICT_SYSTEM = `${SYSTEM} JSON must be one object, no prose, under 700 tokens, and must validate against the requested keys.`;
+
+async function streamCompletion(baseUrl: string, apiKey: string, model: string, system: string, user: string, audienceIndex: number, emit: Emit) {
   for (let attempt = 0; attempt < 3; attempt++) {
-    const started = performance.now();
-    try {
-      console.info("[Lumen AMD] POST /chat/completions", { model, attempt: attempt + 1 });
-      const response = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` }, body: JSON.stringify({ model, messages: [{ role: "system", content: system }, { role: "user", content: user }], response_format: { type: "json_object" }, temperature: 0.8, max_tokens: 2500 }), cache: "no-store" });
-      const responseBody = await response.text();
-      if (response.status === 429) { console.error("[Lumen AMD] completion failed", { status: response.status, body: responseBody.slice(0, 500) }); await sleep(retryAfterMs(response) || Math.min(8000, 500 * 2 ** attempt) + Math.floor(Math.random() * 250)); continue; }
-      if (!response.ok) { console.error("[Lumen AMD] completion failed", { status: response.status, body: responseBody.slice(0, 500) }); const error = new Error(`AMD request failed with ${response.status}`); (error as Error & { status?: number }).status = response.status; throw error; }
-      return { response: JSON.parse(responseBody) as ModelResponse, latencyMs: Math.round(performance.now() - started) };
-    } catch (error) { lastError = error as Error; const status = (error as Error & { status?: number }).status; if (status === 502 || status === 503) throw error; if (attempt < 2) await sleep(Math.min(8000, 500 * 2 ** attempt) + Math.floor(Math.random() * 250)); }
+    const started = performance.now(); emit({ type: "audience-status", audience: audienceIndex, status: "thinking", model, attempt: attempt + 1 });
+    const response = await fetch(`${baseUrl}/chat/completions`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` }, body: JSON.stringify({ model, messages: [{ role: "system", content: system }, { role: "user", content: user }], response_format: { type: "json_object" }, temperature: 0.8, max_tokens: 900, stream: true, stream_options: { include_usage: true } }), cache: "no-store" });
+    if (response.status === 429) { const body = await response.text(); console.error("[Lumen AMD] stream 429", { audience: audienceIndex, body: body.slice(0, 500) }); await sleep(retryAfterMs(response) || Math.min(8000, 500 * 2 ** attempt) + Math.floor(Math.random() * 250)); continue; }
+    if (response.status === 502 || response.status === 503) { const body = await response.text(); console.error("[Lumen AMD] stream unavailable", { status: response.status, audience: audienceIndex, body: body.slice(0, 500) }); const error = new Error(`AMD ${response.status}`); (error as Error & { status?: number }).status = response.status; throw error; }
+    if (!response.ok || !response.body) { const body = await response.text(); console.error("[Lumen AMD] stream failed", { status: response.status, body: body.slice(0, 500) }); throw new Error(`AMD ${response.status}`); }
+    const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = ""; let raw = ""; let completionTokens = 0; let usage: Usage = {};
+    const consume = (line: string) => { if (!line.startsWith("data:")) return; const value = line.slice(5).trim(); if (!value || value === "[DONE]") return; try { const chunk = JSON.parse(value) as { choices?: Array<{ delta?: { content?: string } }>; usage?: Usage; model?: string }; usage = chunk.usage || usage; const token = chunk.choices?.[0]?.delta?.content || ""; if (token) { raw += token; completionTokens++; const elapsed = performance.now() - started; emit({ type: "token", audience: audienceIndex, token, tokens: completionTokens, elapsedMs: Math.round(elapsed), tokensPerSecond: Number((completionTokens / Math.max(elapsed / 1000, .001)).toFixed(1)) }); const partial = partialJson(raw); if (partial) emit({ type: "partial", audience: audienceIndex, ...partial }); } } catch { /* ignore incomplete SSE chunks */ } };
+    while (true) { const { value, done } = await reader.read(); buffer += decoder.decode(value || new Uint8Array(), { stream: !done }); const lines = buffer.split("\n"); buffer = lines.pop() || ""; lines.forEach(consume); if (done) break; }
+    const parsed = CompactSceneSchema.parse(JSON.parse(raw)); completionTokens = numeric(usage.completion_tokens, completionTokens); const latencyMs = Math.round(performance.now() - started); const result = { parsed, raw, model, latencyMs, completionTokens, usage }; emit({ type: "audience-status", audience: audienceIndex, status: "ready", elapsedMs: latencyMs, tokensPerSecond: Number((completionTokens / Math.max(latencyMs / 1000, .001)).toFixed(1)) }); return result;
   }
-  throw lastError || new Error("AMD request failed");
+  throw new Error("AMD 429 retry limit reached");
 }
 
-async function generateAudience(brief: Record<string, unknown>, audience: string, index: number, models: Set<string> | null): Promise<AudienceResult> {
-  const fallback = presetFor(audience, index); const baseUrl = process.env.AMD_BASE_URL!; const apiKey = process.env.AMD_API_KEY!; let model = models?.has(mainModel()) === false && models.has(fallbackModel()) ? fallbackModel() : mainModel();
-  const key = hash({ brief, audience, model }); const cached = memoryCache.get(key); if (cached) return cached;
-  const user = JSON.stringify({ brief, audience, required: "Return one scene script object with palette, fontPairing, mood, shader, 5 scenes, soundscape, callToAction, qualityScore." });
-  const strict = "Return JSON only. No markdown, no commentary. The JSON must contain exactly one scene script object with palette of 5 colors, fontPairing, mood, shader, exactly 5 scenes, soundscape, callToAction, and qualityScore.";
-  const normal = "You are Lumen, a cinematic brand director. Create a distinct, premium visual world for the requested audience. Return valid JSON only.";
-  let completion: { response: ModelResponse; latencyMs: number } | undefined; let notice: string | undefined;
-  for (let jsonAttempt = 0; jsonAttempt < 2; jsonAttempt++) {
-    try { completion = await fetchCompletion(baseUrl, apiKey, model, jsonAttempt ? strict : normal, user); const raw = completion.response.choices?.[0]?.message?.content || "{}"; const parsed = JSON.parse(raw); const scene = repairScene(Array.isArray(parsed) ? parsed[0] : parsed, fallback, audience, brief); const usage = completion.response.usage || {}; const completionTokens = numeric(usage.completion_tokens, 0); const latencyMs = completion.latencyMs; const result: AudienceResult = { scene, raw, model: completion.response.model || model, latencyMs, completionTokens, tokensPerSecond: completionTokens > 0 ? Number((completionTokens / Math.max(latencyMs / 1000, .001)).toFixed(2)) : 0, costUsd: numeric(usage.cost_usd ?? usage.cost ?? usage.total_cost, 0), live: true }; memoryCache.set(key, result); return result; } catch (error) { const status = (error as Error & { status?: number }).status; if (status === 502 || status === 503) model = fallbackModel(); notice = status === 502 || status === 503 ? `Primary model unavailable (${status}); using fallback.` : error instanceof Error ? error.message : "Invalid AMD response"; }
-  }
-  return { scene: fallback, raw: JSON.stringify(fallback, null, 2), model, latencyMs: completion?.latencyMs || 0, completionTokens: 0, tokensPerSecond: 0, costUsd: 0, live: false, notice };
+async function runAudience(brief: Record<string, unknown>, audience: string, index: number, models: Set<string> | null, emit: Emit): Promise<CompactResult> {
+  const fallback = presetFor(audience, index); const baseUrl = process.env.AMD_BASE_URL!.replace(/\/$/, ""); const apiKey = process.env.AMD_API_KEY!; let model = models?.has(mainModel()) === false && models.has(fallbackModel()) ? fallbackModel() : mainModel(); const key = hash({ brief, audience, model }); const cached = memoryCache.get(key); if (cached) { emit({ type: "audience-status", audience: index, status: "ready", cached: true }); emit({ type: "audience-complete", audience: index, compact: cached.compact, raw: cached.raw }); return cached; }
+  const user = JSON.stringify({ brief: { brand: brief.brandName, product: brief.product, tone: brief.tone, goal: brief.goal }, audience }); let notice: string | undefined;
+  for (let attempt = 0; attempt < 2; attempt++) { try { const result = await streamCompletion(baseUrl, apiKey, model, attempt ? STRICT_SYSTEM : SYSTEM, user, index, emit); const costUsd = numeric(result.usage.cost_usd ?? result.usage.cost ?? result.usage.total_cost, 0); const output: CompactResult = { compact: result.parsed, raw: result.raw, model, latencyMs: result.latencyMs, completionTokens: result.completionTokens, tokensPerSecond: Number((result.completionTokens / Math.max(result.latencyMs / 1000, .001)).toFixed(1)), costUsd, live: true }; memoryCache.set(key, output); emit({ type: "audience-complete", audience: index, compact: result.parsed, raw: result.raw }); return output; } catch (error) { const status = (error as Error & { status?: number }).status; if (status === 502 || status === 503) model = fallbackModel(); notice = status ? `AMD ${status}` : "Invalid compact JSON"; emit({ type: "audience-status", audience: index, status: "retrying", reason: notice }); } }
+  const compactFallback = { a: fallback.audience, b: fallback.brandName, r: fallback.product, p: fallback.palette, m: fallback.mood, f: { d: fallback.fontPairing.display, b: fallback.fontPairing.body }, h: { n: fallback.shader.noiseScale, s: fallback.shader.speed, d: fallback.shader.distortion, c: fallback.shader.colorMix }, x: fallback.scenes.slice(0, 4).map((scene) => ({ h: scene.headline, t: scene.subtext, v: "orbit" as const })), q: { t: fallback.soundscape.tempo, s: fallback.soundscape.scale as "Dorian" }, c: fallback.callToAction }; const output = { compact: compactFallback, raw: JSON.stringify(compactFallback, null, 2), model, latencyMs: 0, completionTokens: 0, tokensPerSecond: 0, costUsd: 0, live: false, notice }; emit({ type: "audience-complete", audience: index, compact: compactFallback, raw: output.raw }); return output;
 }
 
 export async function POST(request: Request) {
-  const brief = await request.json().catch(() => ({})) as Record<string, unknown>;
-  const audiences = Array.isArray(brief.audiences) && brief.audiences.length >= 2 ? brief.audiences.slice(0, 2).map(String) : PRESETS.map((preset) => preset.audience);
-  const env = envPresence(); console.info("[Lumen AMD] env presence", env); const missing = Object.entries(env).filter(([, present]) => !present).map(([name]) => name);
-  if (missing.length) { const notice = `Mock mode: missing ${missing.join(", ")}`; console.warn("[Lumen AMD] live call skipped", { reason: notice }); return NextResponse.json({ mode: "mock", notice, scenes: audiences.map((audience, index) => presetFor(audience, index)), rawResponses: audiences.map((audience, index) => JSON.stringify(presetFor(audience, index), null, 2)), metrics: { model: "Lumen / local mock", gpu: "Local fallback", latencyMs: 18, completionTokens: 0, tokensPerSecond: 0, costUsd: 0, qualityScore: 96 } }); }
-  const baseUrl = process.env.AMD_BASE_URL!.replace(/\/$/, ""); const apiKey = process.env.AMD_API_KEY!; const models = await availableModels(baseUrl, apiKey); const results = await Promise.all(audiences.map((audience, index) => generateAudience(brief, audience, index, models)));
-  const live = results.every((result) => result.live); const tokens = results.reduce((total, result) => total + result.completionTokens, 0); const latencyMs = Math.max(...results.map((result) => result.latencyMs)); const costUsd = results.reduce((total, result) => total + result.costUsd, 0); const qualityScore = Math.round(results.reduce((total, result) => total + result.scene.qualityScore, 0) / results.length);
-  return NextResponse.json({ mode: live ? "live" : "mock", notice: results.find((result) => result.notice)?.notice, scenes: results.map((result) => result.scene), rawResponses: results.map((result) => result.raw), metrics: { model: results.map((result) => result.model).join(" + "), gpu: live ? "AMD Token Factory" : "Local fallback", latencyMs, completionTokens: tokens, tokensPerSecond: results.reduce((total, result) => total + result.tokensPerSecond, 0), costUsd: Number(costUsd.toFixed(6)), qualityScore } });
+  const brief = await request.json().catch(() => ({})) as Record<string, unknown>; const audiences = Array.isArray(brief.audiences) && brief.audiences.length >= 2 ? brief.audiences.slice(0, 2).map(String) : PRESETS.map((preset) => preset.audience); const env = envPresence(); console.info("[Lumen AMD] env presence", env); const missing = Object.entries(env).filter(([, present]) => !present).map(([name]) => name); const encoder = new TextEncoder();
+  const stream = new ReadableStream({ start(controller) { const emit: Emit = (event) => controller.enqueue(encoder.encode(sse(event))); void (async () => { if (missing.length) { emit({ type: "done", mode: "mock", notice: `Mock mode: missing ${missing.join(", ")}`, scenes: PRESETS.slice(0, 2), rawResponses: PRESETS.slice(0, 2).map((preset) => JSON.stringify(preset, null, 2)), metrics: { model: "Lumen / local mock", gpu: "Local fallback", latencyMs: 18, completionTokens: 0, tokensPerSecond: 0, costUsd: 0, qualityScore: 96 } }); controller.close(); return; } const baseUrl = process.env.AMD_BASE_URL!.replace(/\/$/, ""); const models = await availableModels(baseUrl, process.env.AMD_API_KEY!); const results = await Promise.all(audiences.map((audience, index) => runAudience(brief, audience, index, models, emit))); const live = results.every((result) => result.live); const latencyMs = Math.max(...results.map((result) => result.latencyMs)); const completionTokens = results.reduce((sum, result) => sum + result.completionTokens, 0); emit({ type: "done", mode: live ? "live" : "mock", notice: results.find((result) => result.notice)?.notice, compactScenes: results.map((result) => result.compact), rawResponses: results.map((result) => result.raw), metrics: { model: results.map((result) => result.model).join(" + "), gpu: live ? "AMD Token Factory" : "Local fallback", latencyMs, completionTokens, tokensPerSecond: Number(results.reduce((sum, result) => sum + result.tokensPerSecond, 0).toFixed(1)), costUsd: Number(results.reduce((sum, result) => sum + result.costUsd, 0).toFixed(6)), qualityScore: 96 } }); controller.close(); })().catch((error) => { console.error("[Lumen AMD] generation failed", { reason: error instanceof Error ? error.message : "unknown" }); emit({ type: "done", mode: "mock", notice: error instanceof Error ? error.message : "Generation failed", scenes: PRESETS.slice(0, 2), metrics: { model: "Lumen / local mock", gpu: "Local fallback", latencyMs: 0, completionTokens: 0, tokensPerSecond: 0, costUsd: 0, qualityScore: 96 } }); controller.close(); }); } });
+  return new Response(stream, { headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive" } });
 }

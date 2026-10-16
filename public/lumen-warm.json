@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-16T13:40:23.103Z",
+  "brief": {
+    "brandName": "Lumen",
+    "product": "a culture intelligence platform",
+    "tone": "Quietly radical",
+    "goal": "Make the next move with clarity",
+    "audiences": [
+      "Gen Z gamers",
+      "55 year old CFOs"
+    ]
+  },
+  "mode": "live",
+  "model": "DeepSeek-V4-Flash + DeepSeek-V4-Flash",
+  "metrics": {
+    "model": "DeepSeek-V4-Flash + DeepSeek-V4-Flash",
+    "gpu": "AMD Token Factory",
+    "latencyMs": 11494,
+    "completionTokens": 435,
+    "tokensPerSecond": 38.9,
+    "costUsd": 0.000183,
+    "qualityScore": 96
+  },
+  "compactScenes": [
+    {
+      "a": "Gen Z gamers",
+      "b": "Lumen",
+      "r": "culture intelligence platform",
+      "p": [
+        "#0B0F1A",
+        "#4A90D9",
+        "#A3E635",
+        "#F5F5F5",
+        "#FF3E6C"
+      ],
+      "m": "cryptic neon pulse",
+      "f": {
+        "d": "Orbitron",
+        "b": "Inter"
+      },
+      "h": {
+        "n": 0.8,
+        "s": 0.6,
+        "d": 0.4,
+        "c": 0.7
+      },
+      "x": [
+        {
+          "h": "Read the meta",
+          "t": "Decode trends before they spawn",
+          "v": "parallax"
+        },
+        {
+          "h": "Your next move, mapped",
+          "t": "Predict the wave, not the meme",
+          "v": "magnetic"
+        },
+        {
+          "h": "Play the culture",
+          "t": "Live data, zero lag",
+          "v": "glitch"
+        },
+        {
+          "h": "Clarity in chaos",
+          "t": "Spot the signal in the noise",
+          "v": "focus"
+        }
+      ],
+      "q": {
+        "t": 120,
+        "s": "Phrygian"
+      },
+      "c": "Join the loop"
+    },
+    {
+      "a": "55 year old CFOs",
+      "b": "Lumen",
+      "r": "culture intelligence platform",
+      "p": [
+        "#1A1A2E",
+        "#16213E",
+        "#0F3460",
+        "#E94560",
+        "#EAEAEA"
+      ],
+      "m": "quietly radical, decisive, clear",
+      "f": {
+        "d": "Georgia",
+        "b": "Inter"
+      },
+      "h": {
+        "n": 0.4,
+        "s": 0.6,
+        "d": 0.3,
+        "c": 0.5
+      },
+      "x": [
+        {
+          "h": "See culture before it moves",
+          "t": "Predict shifts with data, not guesswork.",
+          "v": "orbit"
+        },
+        {
+          "h": "Clarity for your next step",
+          "t": "Decisions grounded in cultural signals.",
+          "v": "focus"
+        },
+        {
+          "h": "The boardroom lens on culture",
+          "t": "Quantified trends, human context.",
+          "v": "measured"
+        },
+        {
+          "h": "Lead with quiet conviction",
+          "t": "Insight that speaks without noise.",
+          "v": "reveal"
+        }
+      ],
+      "q": {
+        "t": 90,
+        "s": "Dorian"
+      },
+      "c": "Book a briefing"
+    }
+  ],
+  "rawResponses": [
+    "{\"b\":\"Lumen\",\"r\":\"culture intelligence platform\",\"a\":\"Gen Z gamers\",\"p\":[\"#0B0F1A\",\"#4A90D9\",\"#A3E635\",\"#F5F5F5\",\"#FF3E6C\"],\"m\":\"cryptic neon pulse\",\"f\":{\"d\":\"Orbitron\",\"b\":\"Inter\"},\"h\":{\"n\":0.8,\"s\":0.6,\"d\":0.4,\"c\":0.7},\"x\":[{\"h\":\"Read the meta\",\"t\":\"Decode trends before they spawn\",\"v\":\"parallax\"},{\"h\":\"Your next move, mapped\",\"t\":\"Predict the wave, not the meme\",\"v\":\"magnetic\"},{\"h\":\"Play the culture\",\"t\":\"Live data, zero lag\",\"v\":\"glitch\"},{\"h\":\"Clarity in chaos\",\"t\":\"Spot the signal in the noise\",\"v\":\"focus\"}],\"q\":{\"t\":120,\"s\":\"Phrygian\"},\"c\":\"Join the loop\"}",
+    "{\"b\":\"Lumen\",\"r\":\"culture intelligence platform\",\"a\":\"55 year old CFOs\",\"p\":[\"#1A1A2E\",\"#16213E\",\"#0F3460\",\"#E94560\",\"#EAEAEA\"],\"m\":\"quietly radical, decisive, clear\",\"f\":{\"d\":\"Georgia\",\"b\":\"Inter\"},\"h\":{\"n\":0.4,\"s\":0.6,\"d\":0.3,\"c\":0.5},\"x\":[{\"h\":\"See culture before it moves\",\"t\":\"Predict shifts with data, not guesswork.\",\"v\":\"orbit\"},{\"h\":\"Clarity for your next step\",\"t\":\"Decisions grounded in cultural signals.\",\"v\":\"focus\"},{\"h\":\"The boardroom lens on culture\",\"t\":\"Quantified trends, human context.\",\"v\":\"measured\"},{\"h\":\"Lead with quiet conviction\",\"t\":\"Insight that speaks without noise.\",\"v\":\"reveal\"}],\"q\":{\"t\":90,\"s\":\"Dorian\"},\"c\":\"Book a briefing\"}"
+  ],
+  "notice": "Generated live on AMD, replayed from cache",
+  "warmLatencyMs": 11492
+}
