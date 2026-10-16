@@ -10,7 +10,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-If `AMD_API_KEY` is empty, Lumen automatically runs in mock mode with two ready-to-run presets: Gen Z gamers and 55 year old CFOs. With the three AMD variables present, `/api/generate` calls the OpenAI-compatible AMD endpoint, retries once on invalid JSON, validates the scene script with Zod, and falls back safely if needed.
+If `AMD_API_KEY` is empty, Lumen automatically runs in mock mode with two ready-to-run presets: Gen Z gamers and 55 year old CFOs. With the AMD variables present, `/api/generate` calls `{AMD_BASE_URL}/chat/completions` from the server only. It confirms `/models` at startup, runs both audience generations in parallel, honors `Retry-After` on 429s, switches to `AMD_FALLBACK_MODEL` on 502/503, retries invalid JSON once with a stricter system prompt, validates/repairs the scene script with Zod, and falls back safely if needed. Results are cached in server memory and browser local storage for instant repeat demos.
 
 ## Environment
 
@@ -19,10 +19,11 @@ If `AMD_API_KEY` is empty, Lumen automatically runs in mock mode with two ready-
 | `AMD_BASE_URL` | OpenAI-compatible AMD endpoint base URL |
 | `AMD_API_KEY` | AMD Developer Cloud or tokenfactory key |
 | `AMD_MODEL` | Open model served by vLLM |
+| `AMD_FALLBACK_MODEL` | Fallback model used for 502/503 responses or unavailable main model |
 
 ## Architecture
 
-`App Router page` → `Studio brief state` → `POST /api/generate` → `AMD OpenAI-compatible endpoint` → `Zod SceneSchema` → `split reveal renderer`. The fallback path is `PRESETS` and is intentionally first-class, so the demo works without credentials. The client owns interaction state and motion; the route owns provider secrets and validation.
+`App Router page` → `Studio brief state` → `POST /api/generate` → server-side model availability check → two parallel limited completions → Zod repair/validation → metrics aggregation → split reveal renderer. The fallback path is `PRESETS` and is intentionally first-class, so the demo works without credentials. The browser owns interaction state, local-storage caching, and motion; the route owns provider secrets, retries, model selection, validation, and metrics.
 
 ## 90-second demo script
 
@@ -31,7 +32,7 @@ If `AMD_API_KEY` is empty, Lumen automatically runs in mock mode with two ready-
 3. Show the particle-like “composing worlds” state while the scene request resolves.
 4. In Split reveal, switch between Play and Lead. Call out the palette, type, 3D object, and copy changing as the audience changes.
 5. Click scene 03 or drag attention across the five scene cards; toggle sound state.
-6. Open AMD metrics to show model, MI300X badge, latency, and quality score.
+6. Open AMD metrics to show the live model, Token Factory GPU badge, real latency, completion tokens, cost precision, and quality score. If credentials are absent, point out the explicit Mock mode badge.
 7. Finish on the business panel: $480 generated experience versus an $18k manual agency page.
 
 ## Production notes
