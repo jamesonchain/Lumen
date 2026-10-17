@@ -1,4 +1,4 @@
 import type { Metadata } from "next";
 import "./globals.css";
-export const metadata: Metadata = { title:"Lumen — Different worlds, same signal", description:"A cinematic brand experience generator powered by AMD ROCm." };
+export const metadata: Metadata = { title:"Lumen, one brand, every world", description:"Turn one brand brief into two radically different audience worlds, generated live on AMD GPUs.", metadataBase:new URL("https://lumen-amd.vercel.app"), openGraph:{ title:"Lumen, one brand, every world", description:"One brief. Two worlds. Generated live on AMD.", type:"website", images:[{ url:"/opengraph-image", width:1200, height:630, alt:"Lumen split reveal: one brand, every world" }] }, twitter:{ card:"summary_large_image", title:"Lumen, one brand, every world", description:"One brief. Two worlds. Generated live on AMD.", images:["/opengraph-image"] }, icons:{ icon:"/icon.svg" } };
 export default function RootLayout({ children }: Readonly<{children:React.ReactNode}>) { return <html lang="en"><body>{children}</body></html> }

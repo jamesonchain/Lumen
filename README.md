@@ -1,6 +1,6 @@
 # Lumen
 
-Lumen is a cinematic brand experience generator for the AMD Developer Hackathon ACT III, Track 4. One brief becomes two audience-specific worlds, with different palettes, typography, motion language, soundscape settings, and scene scripts.
+Lumen turns one plain-language brand brief into two radically different audience worlds. Give it a brand, product, tone, goal, and two audiences; it creates the visual language, motion, scene copy, soundscape, and 3D direction for each audience.
 
 ## Run it
 
@@ -10,7 +10,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-If `AMD_API_KEY` is empty, Lumen automatically runs in mock mode with two ready-to-run presets: Gen Z gamers and 55 year old CFOs. With the AMD variables present, `/api/generate` calls `{AMD_BASE_URL}/chat/completions` from the server only. It confirms `/models` at startup, runs both compact audience generations in parallel, streams SSE tokens, honors `Retry-After` on 429s, switches to `AMD_FALLBACK_MODEL` on 502/503, retries invalid JSON once with a stricter system prompt, validates with Zod, and falls back safely if needed. The compact response is expanded into the full five-scene client object. Results are cached in server memory and browser local storage for instant repeat demos.
+If `AMD_API_KEY` is empty, Lumen runs in mock mode with ready presets. With credentials, the server calls the exact AMD Token Factory base URL in `AMD_BASE_URL`, at `{AMD_BASE_URL}/chat/completions`, using `DeepSeek-V4-Flash` by default. That model is served on AMD GPUs through AMD Token Factory. The route streams both audiences in parallel, reports measured completion tokens, tok/s, latency, and cost from the response usage block, and caches live preset runs for instant judge demos. Public traffic is limited to three live generations per IP every ten minutes; excess requests replay the last live preset run.
 
 For a fast demo loop, run `npm run benchmark` once to compare the four supported models and print the fastest valid recommendation. With the dev server running, `npm run warm` generates both preset audiences live and writes `public/lumen-warm.json`; the preset brief then replays instantly with the label “Generated live on AMD, replayed from cache”. Custom briefs always call AMD live.
 
@@ -25,7 +25,11 @@ For a fast demo loop, run `npm run benchmark` once to compare the four supported
 
 ## Architecture
 
-`App Router page` → `Studio brief state` → `POST /api/generate` → `/models` check → parallel compact SSE completions → incremental palette/mood events → Zod validation and client-side expansion → metrics aggregation → split reveal renderer. The fallback path is `PRESETS` and is intentionally first-class, so the demo works without credentials. The browser owns interaction state, local-storage/warm replay, and motion; the route owns provider secrets, retries, model selection, validation, streaming, and metrics.
+`App Router page` → `Studio brief state` → `POST /api/generate` → Node.js SSE route → `/models` check → parallel compact AMD completions → incremental palette/mood events → Zod validation/repair → client-side scene expansion → split renderer, audio, and metrics. The route uses `maxDuration = 60`, no-buffer SSE headers, Retry-After handling, model fallback, and an IP window limiter. The browser owns interaction state, local-storage/warm replay, and motion; the route owns provider secrets, retries, validation, streaming, and real metrics.
+
+## Why AMD
+
+AMD Token Factory makes the model call part of the experience rather than a hidden afterthought: DeepSeek-V4-Flash is served on AMD GPUs, and Lumen exposes the measured model name, completion tokens, tok/s, latency, and dollar cost beside the generated worlds. In the current warm run, two preset audiences are generated in parallel and stored in `public/lumen-warm.json` for instant replay. The exact provider endpoint is the value supplied as `AMD_BASE_URL`; the request path appended by Lumen is `/chat/completions` and the default model is `DeepSeek-V4-Flash`.
 
 ## 90-second demo script
 
@@ -36,6 +40,23 @@ For a fast demo loop, run `npm run benchmark` once to compare the four supported
 5. Click scene 03 or drag attention across the five scene cards; toggle sound state.
 6. Open AMD metrics to show the live model, Token Factory GPU badge, real latency, completion tokens, cost precision, and quality score. If credentials are absent, point out the explicit Mock mode badge.
 7. Finish on the business panel: $480 generated experience versus an $18k manual agency page.
+
+## Business value
+
+Lumen prices one generated two-audience experience at $480. A comparable manual agency page averages $18,000 and takes four to six weeks. That is 37.5× more audience-specific point of view per dollar, with the first usable worlds generated in minutes.
+
+## Docker
+
+```bash
+docker compose up --build
+```
+
+Or build and run directly:
+
+```bash
+docker build -t lumen .
+docker run --env-file .env.local -p 3000:3000 lumen
+```
 
 ## Production notes
 
