@@ -39,11 +39,11 @@ AMD Token Factory makes the model call part of the experience rather than a hidd
 4. In Split reveal, switch between Play and Lead. Call out the palette, type, 3D object, and copy changing as the audience changes.
 5. Click scene 03 or drag attention across the five scene cards; toggle sound state.
 6. Open AMD metrics to show the live model, Token Factory GPU badge, real latency, completion tokens, cost precision, and quality score. If credentials are absent, point out the explicit Mock mode badge.
-7. Finish on the business panel: $480 generated experience versus an $18k manual agency page.
+7. Finish on the business panel: the live AMD cost is multiplied by 1,000 for Lumen's illustrative run value, then compared with a 37.5× manual-agency benchmark.
 
 ## Business value
 
-Lumen prices one generated two-audience experience at $480. A comparable manual agency page averages $18,000 and takes four to six weeks. That is 37.5× more audience-specific point of view per dollar, with the first usable worlds generated in minutes.
+The business panel is deliberately computed from the provider response. After a live run, Lumen shows the real AMD usage cost, an illustrative generated-experience value of `real cost × 1,000`, and a manual-agency comparison at `37.5 ×` that value. This keeps the demo honest across models and token prices while making the economic contrast visible. Mock mode shows dashes until a real AMD run supplies measured usage.
 
 ## Docker
 
