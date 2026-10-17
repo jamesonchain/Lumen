@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-16T13:40:23.103Z",
+  "generatedAt": "2026-10-17T12:46:49.335Z",
   "brief": {
     "brandName": "Lumen",
     "product": "a culture intelligence platform",
@@ -16,10 +16,10 @@
   "metrics": {
     "model": "DeepSeek-V4-Flash + DeepSeek-V4-Flash",
     "gpu": "AMD Token Factory",
-    "latencyMs": 11494,
-    "completionTokens": 435,
-    "tokensPerSecond": 38.9,
-    "costUsd": 0.000183,
+    "latencyMs": 17403,
+    "completionTokens": 553,
+    "tokensPerSecond": 32.7,
+    "costUsd": 0.000254,
     "qualityScore": 96
   },
   "compactScenes": [
@@ -28,106 +28,120 @@
       "b": "Lumen",
       "r": "culture intelligence platform",
       "p": [
-        "#0B0F1A",
-        "#4A90D9",
-        "#A3E635",
-        "#F5F5F5",
-        "#FF3E6C"
+        "#0A0A0F",
+        "#00E5FF",
+        "#FF00E5",
+        "#7AFF00",
+        "#1A1A2E"
       ],
-      "m": "cryptic neon pulse",
+      "m": "neon clarity pulse",
       "f": {
-        "d": "Orbitron",
-        "b": "Inter"
+        "d": "mono",
+        "b": "mono"
       },
       "h": {
-        "n": 0.8,
-        "s": 0.6,
-        "d": 0.4,
-        "c": 0.7
+        "n": 7,
+        "s": 2,
+        "d": 3,
+        "c": 4
       },
       "x": [
         {
-          "h": "Read the meta",
-          "t": "Decode trends before they spawn",
-          "v": "parallax"
-        },
-        {
-          "h": "Your next move, mapped",
-          "t": "Predict the wave, not the meme",
-          "v": "magnetic"
-        },
-        {
-          "h": "Play the culture",
-          "t": "Live data, zero lag",
+          "h": "glitch spawn",
+          "t": "read the meta",
           "v": "glitch"
         },
         {
-          "h": "Clarity in chaos",
-          "t": "Spot the signal in the noise",
+          "h": "orb focus",
+          "t": "next move is yours",
           "v": "focus"
+        },
+        {
+          "h": "scanline burst",
+          "t": "culture decoded live",
+          "v": "bloom"
+        },
+        {
+          "h": "magnetic pull",
+          "t": "clarity wins the game",
+          "v": "magnetic"
         }
       ],
       "q": {
-        "t": 120,
-        "s": "Phrygian"
+        "n": 128,
+        "s": "Dorian"
       },
-      "c": "Join the loop"
+      "c": "Enter the Lumen",
+      "l": "terminal",
+      "o": "orb",
+      "y": "scanlines",
+      "t": "mono",
+      "k": "sharp",
+      "g": "light",
+      "w": "glitch"
     },
     {
       "a": "55 year old CFOs",
       "b": "Lumen",
       "r": "culture intelligence platform",
       "p": [
-        "#1A1A2E",
-        "#16213E",
-        "#0F3460",
-        "#E94560",
-        "#EAEAEA"
+        "#0A1F3C",
+        "#2E5A88",
+        "#7BA3C9",
+        "#C8D6E8",
+        "#F2E8D5"
       ],
-      "m": "quietly radical, decisive, clear",
+      "m": "measured quiet authority",
       "f": {
-        "d": "Georgia",
-        "b": "Inter"
+        "d": "elegant serif",
+        "b": "mono"
       },
       "h": {
-        "n": 0.4,
-        "s": 0.6,
-        "d": 0.3,
-        "c": 0.5
+        "n": 0.85,
+        "s": 0.15,
+        "d": 0.2,
+        "c": 0.1
       },
       "x": [
         {
-          "h": "See culture before it moves",
-          "t": "Predict shifts with data, not guesswork.",
-          "v": "orbit"
-        },
-        {
-          "h": "Clarity for your next step",
-          "t": "Decisions grounded in cultural signals.",
-          "v": "focus"
-        },
-        {
-          "h": "The boardroom lens on culture",
-          "t": "Quantified trends, human context.",
+          "h": "Calm data over time",
+          "t": "Steady signals, not noise",
           "v": "measured"
         },
         {
-          "h": "Lead with quiet conviction",
-          "t": "Insight that speaks without noise.",
+          "h": "Clarity from complexity",
+          "t": "Patterns emerge from chaos",
+          "v": "focus"
+        },
+        {
+          "h": "Strategic foresight",
+          "t": "See the next move early",
+          "v": "parallax"
+        },
+        {
+          "h": "Confident decision",
+          "t": "Act with precision and calm",
           "v": "reveal"
         }
       ],
       "q": {
-        "t": 90,
+        "n": 72,
         "s": "Dorian"
       },
-      "c": "Book a briefing"
+      "c": "Request a private briefing",
+      "l": "editorial",
+      "o": "orb",
+      "y": "contour",
+      "t": "elegant serif",
+      "k": "round",
+      "g": "light",
+      "w": "slow float"
     }
   ],
   "rawResponses": [
-    "{\"b\":\"Lumen\",\"r\":\"culture intelligence platform\",\"a\":\"Gen Z gamers\",\"p\":[\"#0B0F1A\",\"#4A90D9\",\"#A3E635\",\"#F5F5F5\",\"#FF3E6C\"],\"m\":\"cryptic neon pulse\",\"f\":{\"d\":\"Orbitron\",\"b\":\"Inter\"},\"h\":{\"n\":0.8,\"s\":0.6,\"d\":0.4,\"c\":0.7},\"x\":[{\"h\":\"Read the meta\",\"t\":\"Decode trends before they spawn\",\"v\":\"parallax\"},{\"h\":\"Your next move, mapped\",\"t\":\"Predict the wave, not the meme\",\"v\":\"magnetic\"},{\"h\":\"Play the culture\",\"t\":\"Live data, zero lag\",\"v\":\"glitch\"},{\"h\":\"Clarity in chaos\",\"t\":\"Spot the signal in the noise\",\"v\":\"focus\"}],\"q\":{\"t\":120,\"s\":\"Phrygian\"},\"c\":\"Join the loop\"}",
-    "{\"b\":\"Lumen\",\"r\":\"culture intelligence platform\",\"a\":\"55 year old CFOs\",\"p\":[\"#1A1A2E\",\"#16213E\",\"#0F3460\",\"#E94560\",\"#EAEAEA\"],\"m\":\"quietly radical, decisive, clear\",\"f\":{\"d\":\"Georgia\",\"b\":\"Inter\"},\"h\":{\"n\":0.4,\"s\":0.6,\"d\":0.3,\"c\":0.5},\"x\":[{\"h\":\"See culture before it moves\",\"t\":\"Predict shifts with data, not guesswork.\",\"v\":\"orbit\"},{\"h\":\"Clarity for your next step\",\"t\":\"Decisions grounded in cultural signals.\",\"v\":\"focus\"},{\"h\":\"The boardroom lens on culture\",\"t\":\"Quantified trends, human context.\",\"v\":\"measured\"},{\"h\":\"Lead with quiet conviction\",\"t\":\"Insight that speaks without noise.\",\"v\":\"reveal\"}],\"q\":{\"t\":90,\"s\":\"Dorian\"},\"c\":\"Book a briefing\"}"
+    "{\n  \"b\": \"Lumen\",\n  \"r\": \"culture intelligence platform\",\n  \"a\": \"Gen Z gamers\",\n  \"p\": [\"0A0A0F\", \"00E5FF\", \"FF00E5\", \"7AFF00\", \"1A1A2E\"],\n  \"m\": \"neon clarity pulse\",\n  \"f\": {\"d\": \"mono\", \"b\": \"mono\"},\n  \"h\": {\"n\": 7, \"s\": 2, \"d\": 3, \"c\": 4},\n  \"x\": [\n    {\"h\": \"glitch spawn\", \"t\": \"read the meta\", \"v\": \"glitch\"},\n    {\"h\": \"orb focus\", \"t\": \"next move is yours\", \"v\": \"focus\"},\n    {\"h\": \"scanline burst\", \"t\": \"culture decoded live\", \"v\": \"bloom\"},\n    {\"h\": \"magnetic pull\", \"t\": \"clarity wins the game\", \"v\": \"magnetic\"}\n  ],\n  \"q\": {\"n\": 128, \"s\": \"Dorian\"},\n  \"c\": \"Enter the Lumen\",\n  \"l\": \"terminal\",\n  \"o\": \"orb\",\n  \"y\": \"scanlines\",\n  \"t\": \"mono\",\n  \"k\": \"sharp\",\n  \"g\": \"light\",\n  \"w\": \"glitch\"\n}",
+    "{\"b\":\"Lumen\",\"r\":\"culture intelligence platform\",\"a\":\"55 year old CFOs\",\"p\":[\"0A1F3C\",\"2E5A88\",\"7BA3C9\",\"C8D6E8\",\"F2E8D5\"],\"m\":\"measured quiet authority\",\"f\":{\"d\":\"elegant serif\",\"b\":\"mono\"},\"h\":{\"n\":0.85,\"s\":0.15,\"d\":0.2,\"c\":0.1},\"x\":[{\"h\":\"Calm data over time\",\"t\":\"Steady signals, not noise\",\"v\":\"measured\"},{\"h\":\"Clarity from complexity\",\"t\":\"Patterns emerge from chaos\",\"v\":\"focus\"},{\"h\":\"Strategic foresight\",\"t\":\"See the next move early\",\"v\":\"parallax\"},{\"h\":\"Confident decision\",\"t\":\"Act with precision and calm\",\"v\":\"reveal\"}],\"q\":{\"n\":72,\"s\":\"Dorian\"},\"c\":\"Request a private briefing\",\"l\":\"editorial\",\"o\":\"orb\",\"y\":\"contour\",\"t\":\"elegant serif\",\"k\":\"round\",\"g\":\"light\",\"w\":\"slow float\"}"
   ],
   "notice": "Generated live on AMD, replayed from cache",
-  "warmLatencyMs": 11492
+  "warmLatencyMs": 32832
 }
